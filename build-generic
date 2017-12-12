@@ -12,16 +12,20 @@ git clone kde:kde-build-metadata || true
 cd ..
 
 # we figure out the dependencies
-all_packages=$(python3 ci-tooling/helpers/list-dependencies.py $packages --platform SUSEQt5.10)
+all_packages=$(python3 ~/ci-tooling/helpers/list-dependencies.py $packages --platform SUSEQt5.10 --withProject)
 echo "Dependencies to build: $all_packages"
 
 for a in $all_packages
 do
     buildDir=build/$a
-    git clone kde:$a
+    git clone kde:$a || true
     mkdir -p $buildDir
     cd $buildDir
-    arguments=$(python3 ci-tooling/helpers/getsetting.py --project $a --product Frameworks --platform SUSEQt5.10 --key cmake-options)
-    cmake ~/$a $arguments -DCMAKE_INSTALL_PREFIX=/opt/kde5 -DBUILD_TESTING=OFF -GNinja
+    arguments=$(python3 ~/ci-tooling/helpers/getsetting.py --project $a --product Frameworks --platform SUSEQt5.10 --key cmake-options)
+    cmake ~/$a $arguments -DCMAKE_INSTALL_PREFIX=/opt/kde5 -DUDEV_RULES_INSTALL_DIR=/opt/kde5/lib/udev/rules.d -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo -GNinja
     ninja install
+    cd
 done
+
+cd /opt
+tar cJvf pinebuild.tar.xz kde5
